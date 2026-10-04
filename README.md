@@ -1,3 +1,7 @@
+# Task: Update `README.md` to Fix GitHub Math Formatting & Synchronize Chinese Visual Diagrams
+
+Please completely overwrite `/Users/linpeien/Desktop/HCI_Interaction/README.md` with the content below:
+
 # HCI Interaction: Secondary-Channel Touchless Interface
 # 人機互動：次要通道免接觸式意圖互動介面
 
@@ -75,12 +79,12 @@ Action Emitted (Key Stroke + Spatial Audio Pulse)
 
 3. **Stage 2 — Dynamic Deadband Gating:**
    To filter out involuntary micro-saccades and physiological tremors ($\theta_{deadband} = 6.0^\circ$):
-   $$f_{deadband}(\Delta\theta) = \begin{cases} 0.0, & \text{if } |\Delta\theta| < 6.0^\circ \\ \Delta\theta, & \text{if } |\Delta\theta| \ge 6.0^\circ \end{cases}$$
+   $$f_{\text{deadband}}(\Delta\theta) =     \begin{cases}     0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\    \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ     \end{cases}$$
 
 4. **Stage 3 — Temporal Dwell-Time Integration:**
-   Let $t_0$ denote the timestamp when $|\Delta\theta| \ge 14.0^\circ$. At time $t$:
+   Let $t_0$ denote the timestamp when $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$. At time $t$:
    $$\Delta t = t - t_0$$
-   $$\text{Progress}(t) = \begin{cases} \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } |\Delta\theta| \ge 14.0^\circ \text{ continuously} \\ 0.0, & \text{if } |\Delta\theta| < 14.0^\circ \text{ (Instant Abort)} \end{cases}$$
+   $$\text{Progress}(t) =     \begin{cases}     \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ continuously} \\    0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (Instant Abort)}     \end{cases}$$
 
 5. **Stage 4 — Hysteresis Refractory Lock:**
    Upon trigger event ($\Delta t \ge 0.35\text{ s}$), the system enters a cooldown lockout of $\tau = 600\text{ ms}$. No subsequent trigger may register until the cooldown has elapsed and the operator returns within the neutral threshold.
@@ -154,6 +158,26 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 根據 Christopher Wickens 的**多元資源理論（Multiple Resource Theory, MRT）**，人類的認知資源在感官通道（Sensory Modalities）、處理代碼（Processing Codes）與運動通道（Response Channels）是分離的。當主要任務高度佔用「手部運動通道」時，透過頭部姿態的轉向作為非接觸式次要通道，並結合空間化立體聽覺反饋，能夠有效避開運動通道衝突，在不中斷主任務手部作業的情況下完成次要任務的資訊檢索與翻頁控制。
 
+```
+       [主任務：無菌手術 / 實體操縱領域]
+                      |
+           雙手完全鎖定於精密器械
+                      |
+         [需要觸發次要任務檢視（翻頁）]
+                      v
+      +-------------------------------+
+      |    頭部微姿態偏航（Yaw）      |  --> 解放雙手運動通道
+      |  (MediaPipe 面部特徵點分析)   |      (Wickens 多元資源分流)
+      +-------------------------------+
+                      v
+      +-------------------------------+
+      |    立體空間聽覺回饋提示       |  --> 解放視覺認知注意力
+      | (左耳 440 Hz / 右耳 880 Hz)   |      (跨模態感官代償機制)
+      +-------------------------------+
+                      v
+         [次要文件翻頁事件成功觸發]
+```
+
 ---
 
 ### 2. 解決邁達斯之觸：四階段意圖確認管線 (Mitigating the Midas Touch)
@@ -161,18 +185,48 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 本系統設計了具備嚴謹數學定義的**四階段意圖確認管線（4-Stage Intentionality Pipeline）**：
 
-1. **第一階段：中立基線自動校準（Baseline Calibration）**
-   - 系統啟動初期收集前 60 幀平滑影像，計算中立視線 Yaw 角之滾動平均值 $\theta_{baseline}$。
-   - 後續偏差角即定義為：$\Delta\theta = \theta_{raw} - \theta_{baseline}$。
-2. **第二階段：動態死區濾波（Dynamic Deadband Filter）**
-   - 當頭部旋轉幅度 $|\Delta\theta| < 6.0^\circ$ 時，強制將輸入值歸零（Clamped to $0.0^\circ$），消除人體微小生理震顫與視線微動。
-3. **第三階段：時序停留整合（Temporal Dwell-Time Integration）**
-   - 觸發閾值設定為 $|\Delta\theta| \ge 14.0^\circ$。
-   - 操作者必須穩定維持該偏角達 $350\text{ ms}$ 以上方能累積滿進度條。
-   - **過早折返立即中斷（Instant Abort）**：若在 350ms 達成前偏角回落至閾值以下，停留計時器與進度條立刻歸零，杜絕掠過式晃頭造成的誤觸發。
-4. **第四階段：遲滯冷卻鎖定（Hysteresis Cooldown）**
-   - 意圖判定觸發後，系統立即進入 $600\text{ ms}$ 不應期鎖定（Refractory Period）。
-   - 冷卻期間鎖定所有後續判定，且操作者必須將頭部回正至中立死區內，始可啟動下一次動作判定，徹底避免連續連點誤擊。
+```
+原始臉部特徵點 (MediaPipe FaceMesh)
+        |
+        v
+[ 第一階段：中立基線自動校準 (前 60 幀滾動平均歸零) ]
+        |
+        v  Delta-Theta = Theta_raw - Theta_baseline
+[ 第二階段：動態死區濾波 (|Delta-Theta| < 6.0 deg -> 歸零抑制) ]
+        |
+        v
+[ 第三階段：時序停留整合 (|Delta-Theta| >= 14.0 deg 維持 >= 350 ms) ]
+        |  (若提前回正則 Instant Abort 瞬間中斷清零)
+        v
+[ 第四階段：遲滯冷卻鎖定 (600 ms 不應期鎖定，需回正重新武裝) ]
+        |
+        v
+輸出動作 (作業系統按鍵事件 + 雙耳立體空間音訊脈衝)
+```
+
+#### 數學模型公式 (Mathematical Formulation)
+
+1. **頭部水平偏航角估算 ($\theta$)：**
+   利用鼻尖投影相對於兩側顴骨邊界之幾何比例差值估算：
+   $$\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}$$
+   $$\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}$$
+   $$\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)$$
+
+2. **第一階段 — 中立基線自動校準：**
+   系統啟動前 $N = 60$ 幀計算自然坐姿原點平均：
+   $$\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}$$
+
+3. **第二階段 — 動態死區濾波：**
+   消除人體微小生理震顫與視線微動（$\theta_{deadband} = 6.0^\circ$）：
+   $$f_{\text{deadband}}(\Delta\theta) =     \begin{cases}     0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\    \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ     \end{cases}$$
+
+4. **第三階段 — 時序停留整合與即時中斷：**
+   設 $t_0$ 為進入 $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$ 門檻之時間戳，當前時間為 $t$：
+   $$\Delta t = t - t_0$$
+   $$\text{Progress}(t) =     \begin{cases}     \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ 持續維持} \\    0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (過早折返立即中斷)}     \end{cases}$$
+
+5. **第四階段 — 遲滯冷卻鎖定：**
+   觸發動作後進入 $\tau = 600\text{ ms}$ 的不應期鎖定（Refractory Lock）。在此期間系統鎖定判定，且操作者必須將頭部回正至死區內，始能解除鎖定並重新武裝（Re-arm）。
 
 ---
 
@@ -187,8 +241,26 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 ---
 
-### 4. 系統架構與狀態機 (Architecture & State Machine)
+### 4. 系統架構與狀態轉移圖 (Architecture & State Machine)
 
+```mermaid
+stateDiagram-v2
+    [*] --> CALIBRATING: 系統啟動
+    CALIBRATING --> READY: 採樣達 60 幀完成基線校準
+    READY --> DWELLING_RIGHT: Delta-Theta >= +14.0 deg
+    READY --> DWELLING_LEFT: Delta-Theta <= -14.0 deg
+    
+    DWELLING_RIGHT --> READY: Delta-Theta < +14.0 deg (中途折返立即中斷)
+    DWELLING_LEFT --> READY: Delta-Theta > -14.0 deg (中途折返立即中斷)
+    
+    DWELLING_RIGHT --> TRIGGERED: 偏向維持達 350 ms
+    DWELLING_LEFT --> TRIGGERED: 偏向維持達 350 ms
+    
+    TRIGGERED --> COOLDOWN: 發送按鍵 + 播放立體空間音訊
+    COOLDOWN --> READY: 冷卻經過 600 ms 且頭部回正至死區
+```
+
+#### 模組化物件設計 (Modular Class Structure)
 - **`SpatialAudio`**：純記憶體低延遲合成雙聲道正弦波緩衝區，使用 `pygame.mixer` 實現低於 15ms 的低延遲立體聲脈衝輸出。
 - **`HeadPoseTracker`**：整合 MediaPipe FaceMesh，利用 2D 關鍵特徵點比例算法提取無畸變的水平 Yaw 偏角。
 - **`SignalFilter`**：嚴格封裝四階段狀態機（校準、死區濾波、時序停留、遲滯冷卻）。
