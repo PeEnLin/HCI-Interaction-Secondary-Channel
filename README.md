@@ -1,7 +1,3 @@
-# Task: Update `README.md` to Fix GitHub Math Formatting & Synchronize Chinese Visual Diagrams
-
-Please completely overwrite `/Users/linpeien/Desktop/HCI_Interaction/README.md` with the content below:
-
 # HCI Interaction: Secondary-Channel Touchless Interface
 # 人機互動：次要通道免接觸式意圖互動介面
 
@@ -69,22 +65,53 @@ Action Emitted (Key Stroke + Spatial Audio Pulse)
 
 1. **Normalized Head Yaw Estimation ($\theta$):**
    Using MediaPipe FaceMesh 2D landmarks for the nose tip $P_{nose}$ and zygomatic/lateral facial margins $P_{L}$ and $P_{R}$ (in mirrored coordinates):
-   $$\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}$$
-   $$\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}$$
-   $$\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)$$
+
+$$
+\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}
+$$
+
+$$
+\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}
+$$
+
+$$
+\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)
+$$
 
 2. **Stage 1 — Baseline Calibration:**
    Over the initial $N = 60$ frames, the rolling baseline is determined by:
-   $$\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}$$
+
+$$
+\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}
+$$
 
 3. **Stage 2 — Dynamic Deadband Gating:**
    To filter out involuntary micro-saccades and physiological tremors ($\theta_{deadband} = 6.0^\circ$):
-   $$f_{\text{deadband}}(\Delta\theta) =     \begin{cases}     0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\    \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ     \end{cases}$$
+
+$$
+f_{\text{deadband}}(\Delta\theta) = \left\{
+\begin{array}{ll}
+0.0, & \text{if } |\Delta\theta| < 6.0^\circ \\
+\Delta\theta, & \text{if } |\Delta\theta| \ge 6.0^\circ
+\end{array}
+\right.
+$$
 
 4. **Stage 3 — Temporal Dwell-Time Integration:**
-   Let $t_0$ denote the timestamp when $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$. At time $t$:
-   $$\Delta t = t - t_0$$
-   $$\text{Progress}(t) =     \begin{cases}     \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ continuously} \\    0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (Instant Abort)}     \end{cases}$$
+   Let $t_0$ denote the timestamp when $|\Delta\theta| \ge 14.0^\circ$. At time $t$:
+
+$$
+\Delta t = t - t_0
+$$
+
+$$
+\text{Progress}(t) = \left\{
+\begin{array}{ll}
+\min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } |\Delta\theta| \ge 14.0^\circ \text{ continuously} \\
+0.0, & \text{if } |\Delta\theta| < 14.0^\circ \text{ (Instant Abort)}
+\end{array}
+\right.
+$$
 
 5. **Stage 4 — Hysteresis Refractory Lock:**
    Upon trigger event ($\Delta t \ge 0.35\text{ s}$), the system enters a cooldown lockout of $\tau = 600\text{ ms}$. No subsequent trigger may register until the cooldown has elapsed and the operator returns within the neutral threshold.
@@ -208,22 +235,53 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 1. **頭部水平偏航角估算 ($\theta$)：**
    利用鼻尖投影相對於兩側顴骨邊界之幾何比例差值估算：
-   $$\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}$$
-   $$\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}$$
-   $$\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)$$
+
+$$
+\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}
+$$
+
+$$
+\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}
+$$
+
+$$
+\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)
+$$
 
 2. **第一階段 — 中立基線自動校準：**
    系統啟動前 $N = 60$ 幀計算自然坐姿原點平均：
-   $$\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}$$
+
+$$
+\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}
+$$
 
 3. **第二階段 — 動態死區濾波：**
    消除人體微小生理震顫與視線微動（$\theta_{deadband} = 6.0^\circ$）：
-   $$f_{\text{deadband}}(\Delta\theta) =     \begin{cases}     0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\    \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ     \end{cases}$$
+
+$$
+f_{\text{deadband}}(\Delta\theta) = \left\{
+\begin{array}{ll}
+0.0, & \text{if } |\Delta\theta| < 6.0^\circ \\
+\Delta\theta, & \text{if } |\Delta\theta| \ge 6.0^\circ
+\end{array}
+\right.
+$$
 
 4. **第三階段 — 時序停留整合與即時中斷：**
-   設 $t_0$ 為進入 $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$ 門檻之時間戳，當前時間為 $t$：
-   $$\Delta t = t - t_0$$
-   $$\text{Progress}(t) =     \begin{cases}     \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ 持續維持} \\    0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (過早折返立即中斷)}     \end{cases}$$
+   設 $t_0$ 為進入 $|\Delta\theta| \ge 14.0^\circ$ 門檻之時間戳，當前時間為 $t$：
+
+$$
+\Delta t = t - t_0
+$$
+
+$$
+\text{Progress}(t) = \left\{
+\begin{array}{ll}
+\min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } |\Delta\theta| \ge 14.0^\circ \text{ 持續維持} \\
+0.0, & \text{if } |\Delta\theta| < 14.0^\circ \text{ (過早折返立即中斷)}
+\end{array}
+\right.
+$$
 
 5. **第四階段 — 遲滯冷卻鎖定：**
    觸發動作後進入 $\tau = 600\text{ ms}$ 的不應期鎖定（Refractory Lock）。在此期間系統鎖定判定，且操作者必須將頭部回正至死區內，始能解除鎖定並重新武裝（Re-arm）。
