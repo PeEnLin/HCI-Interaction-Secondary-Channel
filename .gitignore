@@ -1,0 +1,27 @@
+cd ~/Desktop/HCI_Interaction
+
+cat << 'EOF' > .gitignore
+# Python 暫存與快取
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虛擬環境
+venv/
+.venv/
+env/
+ENV/
+
+# 系統隱藏檔
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE 設定檔
+.vscode/
+.idea/
+EOF
