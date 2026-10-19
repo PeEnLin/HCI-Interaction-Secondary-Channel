@@ -1,10 +1,28 @@
 # HCI Interaction: Secondary-Channel Touchless Interface
 # 人機互動：次要通道免接觸式意圖互動介面
+# 二次チャネル非接触型意図推定インタフェース
 
 [![Python 3.10](https://img.shields.io/badge/Python-3.10.16-blue.svg)](https://www.python.org/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-FaceMesh-green.svg)](https://developers.google.com/mediapipe)
 [![Pygame](https://img.shields.io/badge/Pygame-SpatialAudio-orange.svg)](https://www.pygame.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 🇯🇵 日本語概要 (Research Overview)
+
+### 背景と目的
+外科手術環境や航空機コックピット等の高負荷な二重課題（Dual-task）環境において、操作者の手足（主運動チャネル）は精密機器の操作に拘束されています。電子カルテやチェックリスト等の二次的ドキュメントを参照する際、手動操作は作業遅延や無菌性の破綻、認知コンテキストの断絶を引き起こします。
+
+本プロジェクトは、クリストファー・ウィケンズ（Christopher Wickens）の**多元資源理論（Multiple Resource Theory: MRT）**に立脚し、手動操作を阻害しない「頭部マイクロポーズ（Yaw回転）」を非接触型二次チャネルとして活用。さらに「バイノーラル立体音響フィードバック」による感覚代行を組み合わせることで、**視覚および手動運動チャネルの飽和を回避する非接触型意図推定インタフェース**を構築しました。
+
+### コア技術ハイライト
+1. **マイダスタッチ（誤作動）の抑制**:
+   自然な頭部運動による誤検出を防ぐため、厳密な数学的モデルに基づく**「4段階意図判定パイプライン」**（自動キャリブレーション、動的デッドバンド、時間的滞留統合、不応期ロック）を実装。
+2. **立体音響による感覚代行（Cross-Modal Sensory Substitution）**:
+   視覚への過度な依存を排除するため、左右の操作決定時に空間化された正弦波パルス（左耳 440 Hz / 右耳 880 Hz）を低遅延合成し、視線を主視野から逸らさずに確信度の高い操作フィードバックを提供。
+3. **SonicAnalytics Lab との連携評価**:
+   本インタラクションで発生したイベントログや操作遅延データは、評価プラットフォーム **[SonicAnalytics Lab](https://github.com/PeEnLin/SonicAnalytics)** とシームレスに連携可能であり、NASA-TLX 多次元認知負荷測定および一元配置分散分析（One-way ANOVA）を用いた定量的検証に対応。
 
 ---
 
@@ -15,12 +33,12 @@ In high-workload dual-task operating environments—such as laparoscopic and ort
 
 Based on Christopher Wickens' **Multiple Resource Theory (MRT)**, human information processing is divided along multiple cognitive dimensions (sensory modalities, processing codes, and response channels). When primary tasks consume manual-spatial motor resources, deploying a secondary, touchless motor channel (head pose orientation) paired with auditory sensory feedback avoids resource bottlenecking and preserves structural task performance without manual interruption.
 
-```
+```text
        [Primary Task: Sterile/Manual Domain]
                  |
-     Hands Locked to Instruments
+       Hands Locked to Instruments
                  |
-      [Secondary Channel Trigger Needed]
+       [Secondary Channel Trigger Needed]
                  v
    +-----------------------------+
    |   Head Pose Orientation     |  --> Sparing Manual Resources
@@ -42,7 +60,7 @@ A persistent challenge in touchless, gaze-, and head-driven interaction is the *
 
 To ensure deterministic intentionality, this system implements a mathematically formulated **4-Stage Intentionality Filter Pipeline**:
 
-```
+```text
 Raw Landmarks
      |
      v
@@ -66,52 +84,28 @@ Action Emitted (Key Stroke + Spatial Audio Pulse)
 1. **Normalized Head Yaw Estimation ($\theta$):**
    Using MediaPipe FaceMesh 2D landmarks for the nose tip $P_{nose}$ and zygomatic/lateral facial margins $P_{L}$ and $P_{R}$ (in mirrored coordinates):
 
-$$
-\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}
-$$
+$$\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}$$
 
-$$
-\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}
-$$
+$$\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}$$
 
-$$
-\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)
-$$
+$$\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)$$
 
 2. **Stage 1 — Baseline Calibration:**
    Over the initial $N = 60$ frames, the rolling baseline is determined by:
 
-$$
-\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}
-$$
+$$\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}$$
 
 3. **Stage 2 — Dynamic Deadband Gating:**
    To filter out involuntary micro-saccades and physiological tremors ($\theta_{deadband} = 6.0^\circ$):
 
-$$
-f_{\text{deadband}}(\Delta\theta) = \left\{
-\begin{array}{ll}
-0.0, & \text{if } |\Delta\theta| < 6.0^\circ \\
-\Delta\theta, & \text{if } |\Delta\theta| \ge 6.0^\circ
-\end{array}
-\right.
-$$
+$$f_{\text{deadband}}(\Delta\theta) = \left\{ \begin{array}{ll} 0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\ \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ \end{array} \right.$$
 
 4. **Stage 3 — Temporal Dwell-Time Integration:**
-   Let $t_0$ denote the timestamp when $|\Delta\theta| \ge 14.0^\circ$. At time $t$:
+   Let $t_0$ denote the timestamp when $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$. At time $t$:
 
-$$
-\Delta t = t - t_0
-$$
+$$\Delta t = t - t_0$$
 
-$$
-\text{Progress}(t) = \left\{
-\begin{array}{ll}
-\min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } |\Delta\theta| \ge 14.0^\circ \text{ continuously} \\
-0.0, & \text{if } |\Delta\theta| < 14.0^\circ \text{ (Instant Abort)}
-\end{array}
-\right.
-$$
+$$\text{Progress}(t) = \left\{ \begin{array}{ll} \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ continuously} \\ 0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (Instant Abort)} \end{array} \right.$$
 
 5. **Stage 4 — Hysteresis Refractory Lock:**
    Upon trigger event ($\Delta t \ge 0.35\text{ s}$), the system enters a cooldown lockout of $\tau = 600\text{ ms}$. No subsequent trigger may register until the cooldown has elapsed and the operator returns within the neutral threshold.
@@ -160,14 +154,18 @@ stateDiagram-v2
 ### 5. Execution & Hotkeys
 
 #### Environment Setup & Execution
-Run strictly with the designated Python 3.10.16 interpreter:
+Run strictly with Python 3.10+:
 
 ```bash
-# 1. Install dependencies
-/Users/linpeien/.pyenv/versions/3.10.16/bin/pip install -r requirements.txt
+# 1. Clone repository
+git clone [https://github.com/PeEnLin/HCI-Interaction-Secondary-Channel.git](https://github.com/PeEnLin/HCI-Interaction-Secondary-Channel.git)
+cd HCI-Interaction-Secondary-Channel
 
-# 2. Run the application
-/Users/linpeien/.pyenv/versions/3.10.16/bin/python hci_interaction.py
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run the application
+python hci_interaction.py
 ```
 
 #### Hotkey Controls
@@ -175,7 +173,6 @@ Run strictly with the designated Python 3.10.16 interpreter:
 - **`c` or `r`**: Recalibrate neutral baseline head pose.
 - **`p`**: Toggle telemetry HUD overlay.
 
----
 ---
 
 ## 繁體中文說明文件 (Traditional Chinese)
@@ -185,22 +182,22 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 根據 Christopher Wickens 的**多元資源理論（Multiple Resource Theory, MRT）**，人類的認知資源在感官通道（Sensory Modalities）、處理代碼（Processing Codes）與運動通道（Response Channels）是分離的。當主要任務高度佔用「手部運動通道」時，透過頭部姿態的轉向作為非接觸式次要通道，並結合空間化立體聽覺反饋，能夠有效避開運動通道衝突，在不中斷主任務手部作業的情況下完成次要任務的資訊檢索與翻頁控制。
 
-```
+```text
        [主任務：無菌手術 / 實體操縱領域]
                       |
-           雙手完全鎖定於精密器械
+            雙手完全鎖定於精密器械
                       |
          [需要觸發次要任務檢視（翻頁）]
                       v
-      +-------------------------------+
-      |    頭部微姿態偏航（Yaw）      |  --> 解放雙手運動通道
-      |  (MediaPipe 面部特徵點分析)   |      (Wickens 多元資源分流)
-      +-------------------------------+
+     +-------------------------------+
+     |    頭部微姿態偏航（Yaw）      |  --> 解放雙手運動通道
+     |  (MediaPipe 面部特徵點分析)   |      (Wickens 多元資源分流)
+     +-------------------------------+
                       v
-      +-------------------------------+
-      |    立體空間聽覺回饋提示       |  --> 解放視覺認知注意力
-      | (左耳 440 Hz / 右耳 880 Hz)   |      (跨模態感官代償機制)
-      +-------------------------------+
+     +-------------------------------+
+     |    立體空間聽覺回饋提示       |  --> 解放視覺認知注意力
+     | (左耳 440 Hz / 右耳 880 Hz)   |      (跨模態感官代償機制)
+     +-------------------------------+
                       v
          [次要文件翻頁事件成功觸發]
 ```
@@ -212,7 +209,7 @@ Run strictly with the designated Python 3.10.16 interpreter:
 
 本系統設計了具備嚴謹數學定義的**四階段意圖確認管線（4-Stage Intentionality Pipeline）**：
 
-```
+```text
 原始臉部特徵點 (MediaPipe FaceMesh)
         |
         v
@@ -236,52 +233,28 @@ Run strictly with the designated Python 3.10.16 interpreter:
 1. **頭部水平偏航角估算 ($\theta$)：**
    利用鼻尖投影相對於兩側顴骨邊界之幾何比例差值估算：
 
-$$
-\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}
-$$
+$$\Delta x_L = x_{nose} - x_L, \quad \Delta x_R = x_R - x_{nose}$$
 
-$$
-\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}
-$$
+$$\text{Ratio} = \frac{\Delta x_L - \Delta x_R}{\Delta x_L + \Delta x_R}$$
 
-$$
-\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)
-$$
+$$\theta = \text{Ratio} \times K_{scale} \quad (K_{scale} \approx 50.0^\circ)$$
 
 2. **第一階段 — 中立基線自動校準：**
    系統啟動前 $N = 60$ 幀計算自然坐姿原點平均：
 
-$$
-\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}
-$$
+$$\theta_{baseline} = \frac{1}{N} \sum_{i=1}^{N} \theta_i, \quad \Delta\theta = \theta - \theta_{baseline}$$
 
 3. **第二階段 — 動態死區濾波：**
    消除人體微小生理震顫與視線微動（$\theta_{deadband} = 6.0^\circ$）：
 
-$$
-f_{\text{deadband}}(\Delta\theta) = \left\{
-\begin{array}{ll}
-0.0, & \text{if } |\Delta\theta| < 6.0^\circ \\
-\Delta\theta, & \text{if } |\Delta\theta| \ge 6.0^\circ
-\end{array}
-\right.
-$$
+$$f_{\text{deadband}}(\Delta\theta) = \left\{ \begin{array}{ll} 0.0, & \text{if } \vert{}\Delta\theta\vert{} < 6.0^\circ \\ \Delta\theta, & \text{if } \vert{}\Delta\theta\vert{} \ge 6.0^\circ \end{array} \right.$$
 
 4. **第三階段 — 時序停留整合與即時中斷：**
-   設 $t_0$ 為進入 $|\Delta\theta| \ge 14.0^\circ$ 門檻之時間戳，當前時間為 $t$：
+   設 $t_0$ 為進入 $\vert{}\Delta\theta\vert{} \ge 14.0^\circ$ 門檻之時間戳，當前時間為 $t$：
 
-$$
-\Delta t = t - t_0
-$$
+$$\Delta t = t - t_0$$
 
-$$
-\text{Progress}(t) = \left\{
-\begin{array}{ll}
-\min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } |\Delta\theta| \ge 14.0^\circ \text{ 持續維持} \\
-0.0, & \text{if } |\Delta\theta| < 14.0^\circ \text{ (過早折返立即中斷)}
-\end{array}
-\right.
-$$
+$$\text{Progress}(t) = \left\{ \begin{array}{ll} \min\left(1.0, \frac{\Delta t}{0.35}\right), & \text{if } \vert{}\Delta\theta\vert{} \ge 14.0^\circ \text{ 持續維持} \\ 0.0, & \text{if } \vert{}\Delta\theta\vert{} < 14.0^\circ \text{ (過早折返立即中斷)} \end{array} \right.$$
 
 5. **第四階段 — 遲滯冷卻鎖定：**
    觸發動作後進入 $\tau = 600\text{ ms}$ 的不應期鎖定（Refractory Lock）。在此期間系統鎖定判定，且操作者必須將頭部回正至死區內，始能解除鎖定並重新武裝（Re-arm）。
@@ -329,17 +302,36 @@ stateDiagram-v2
 
 ### 5. 執行方式與快捷鍵操作 (Execution & Hotkeys)
 
-請務必使用指定的 pyenv Python 3.10.16 環境執行：
+請使用 Python 3.10+ 環境執行：
 
 ```bash
-# 1. 安裝必要套件
-/Users/linpeien/.pyenv/versions/3.10.16/bin/pip install -r requirements.txt
+# 1. 複製專案
+git clone [https://github.com/PeEnLin/HCI-Interaction-Secondary-Channel.git](https://github.com/PeEnLin/HCI-Interaction-Secondary-Channel.git)
+cd HCI-Interaction-Secondary-Channel
 
-# 2. 啟動互動介面
-/Users/linpeien/.pyenv/versions/3.10.16/bin/python hci_interaction.py
+# 2. 安裝必要套件
+pip install -r requirements.txt
+
+# 3. 啟動互動介面
+python hci_interaction.py
 ```
 
 #### 快捷鍵操作
 - **`q` 或 `ESC`**：優雅結束程式並釋放攝影機與音效資源。
 - **`c` 或 `r`**：重新將當前頭部姿勢校準為中立零度基線（Recalibrate Baseline）。
 - **`p`**：切換 HUD 儀表覆蓋層顯示/隱藏。
+
+---
+
+## 🔗 Integrated Research Ecosystem / 統合研究エコシステム
+
+本プロジェクトは、単体での非接触型インタラクションにとどまらず、音響および認知的負荷の統合的評価パイプラインの一部として設計されています。
+
+- **[SonicAnalytics Lab](https://github.com/PeEnLin/SonicAnalytics)**: Multimodal Auditory & Cognitive Load Platform (NASA-TLX / ANOVA F-Test / Real-time RT)
+- **[BilingualSync](https://github.com/PeEnLin/BilingualSync)**: Audio Signal Synchronization & Multi-track Media Processing
+
+---
+
+## 👤 Author / 開発者
+- **Pei-En Lin (林 沛恩)**
+- Background: Music & Computer Science (National Tsing Hua University)
